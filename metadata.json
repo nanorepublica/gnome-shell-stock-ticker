@@ -1,0 +1,7 @@
+{
+	"shell-version": ["3.4.1"], 
+	"uuid": "share-price@akmiller.co.uk", 
+	"name": "Share prices indicator", 
+	"description": "Shows the current share price of chosen companies (based on google finance)",
+	"url":"www.akmiller.co.uk"
+}
