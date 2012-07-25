@@ -26,11 +26,9 @@ function stock(metadata) {
 }
 
 stock.prototype = {
-	//__proto__: PanelMenu.SystemStatusButton.prototype,
 	__proto__: PanelMenu.Button.prototype,
 
 	_init: function() {
-		//PanelMenu.SystemStatusButton.prototype._init.call(this, 'share-stock');
 		PanelMenu.Button.prototype._init.call(this, St.Align.START);
 		this.menubutton = new St.Icon({ icon_name: 'share-stock',
 				icon_type: St.IconType.SYMBOLIC,
@@ -44,12 +42,6 @@ stock.prototype = {
 	enable: function() {
 			Main.panel._rightBox.insert_child_at_index(this.actor, 0);
 			Main.panel._menus.addMenu(this.menu);
-			GLib.timeout_add_seconds(0,30,Lang.bind(this,function () {
-// 				global.log('updating')
-				this._update();
-// 				global.log('updated')
-				return true;
-			}));
 			let fileM = Gio.file_new_for_path(this.file);
 			this.monitor = fileM.monitor(Gio.FileMonitorFlags.NONE, null);
 			this.monitor.connect('changed', Lang.bind(this, this._update));
@@ -116,11 +108,11 @@ stock.prototype = {
 	refresh_list: function(actor,event){
 		for each(menuitem in actor._getMenuItems().slice(0,-2)){
 			company = menuitem.actor.get_children()[0].get_text();
-			global.log("updating info for " + company);
+	//		global.log("updating info for " + company);
 			info = get_current_info(company);
-			global.log("updating text");
+	//		global.log("updating text");
 			this.update_text(menuitem,info);
-			global.log("Update Finished");
+	//		global.log("Update Finished");
 		}
 	},
 
@@ -171,7 +163,7 @@ function get_current_info(company) {
 		info['style'] = ''
 		info['price'] = 'Error getting data...'
 	}
-  	global.log('got info');
+  	//global.log('got info');
 	return info;
 }
 
@@ -206,7 +198,7 @@ function add_new_item(name) {
 	remove_icon = new St.Icon({ icon_name: 'edit-delete',
 		icon_type: St.IconType.SYMBOLIC,
 		style_class: 'system-status-icon' });
-//	remove_icon.connect('button-press-event',remove_item);
+	remove_icon.connect('button-press-event',remove_item);
 
 	this.button.insert_child_at_index(this.price,2);
 	this.button.insert_child_at_index(this.change,3);
@@ -216,12 +208,10 @@ function add_new_item(name) {
 	item.setIconType(St.IconType.FULLCOLOR);
 	item.addActor(this.button);
 	item.addActor(remove_icon);
-	
-	//this.button.connect('button-press-event', this.update);	
 	return item
 }
 
-function remove_item(actor,event) {
+function remove_item(actor) {
 	global.log("EVENT");
 	global.log(actor.get_parent());
 }
