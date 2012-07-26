@@ -1,13 +1,10 @@
 const St = imports.gi.St;
 const Main = imports.ui.main;
-const Tweener = imports.ui.tweener;
-const Mainloop = imports.mainloop;
 const Shell = imports.gi.Shell;
 const Lang = imports.lang;
 const PopupMenu = imports.ui.popupMenu;
 const PanelMenu = imports.ui.panelMenu;
 const Clutter = imports.gi.Clutter;
-const MessageTray = imports.ui.messageTray;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
@@ -69,8 +66,8 @@ stock.prototype = {
 		panelbutton.set_icon_name("share-stock");
 		CompanyMenu.removeAll()
 		companies = this.read_file();
-		for each(company in companies){
-			CompanyMenu.addMenuItem(add_new_item(company));
+		for each(company in companies) {
+			CompanyMenu.addMenuItem(add_new_item(company,companylist));
 		}
 		// Separator
 		this.Separator = new PopupMenu.PopupSeparatorMenuItem();
@@ -79,8 +76,7 @@ stock.prototype = {
 		// Bottom section
 		let bottomSection = new PopupMenu.PopupMenuSection();
 		
-		this.newCompany = new St.Entry(
-		{
+		this.newCompany = new St.Entry({
 			name: "newCompanyEntry",
 			hint_text: _("New Stock Code"),
 			track_hover: true,
@@ -93,7 +89,6 @@ stock.prototype = {
 		    	if (symbol == Clutter.Return) {
 					CompanyMenu.close();
 					panelbutton.set_icon_name("view-refresh");
-					add_new_item(o.get_text());
 					add_new_item_to_file(o.get_text(),companylist);
 					entryNewCompany.set_text('');
 				}
@@ -105,14 +100,11 @@ stock.prototype = {
 		CompanyMenu.addMenuItem(bottomSection);
 	},
 	
-	refresh_list: function(actor,event){
-		for each(menuitem in actor._getMenuItems().slice(0,-2)){
+	refresh_list: function(actor,event) {
+		for each(menuitem in actor._getMenuItems().slice(0,-2)) {
 			company = menuitem.actor.get_children()[0].get_text();
-	//		global.log("updating info for " + company);
 			info = get_current_info(company);
-	//		global.log("updating text");
 			this.update_text(menuitem,info);
-	//		global.log("Update Finished");
 		}
 	},
 
@@ -133,11 +125,11 @@ function get_current_info(company) {
 	try {
 		loaded = url.load_contents(null)[0]
 	} catch (e if e instanceof BadRequest) {
-		global.log("Invalid URI:" + url.get_uri())
+		global.logError("Invalid URI:" + url.get_uri())
 		return "Invalid Name"
 	}
 	j = {}
-	if (loaded === true){
+	if (loaded === true) {
 		str = String(url.load_contents(null)[1])
 		j = JSON.parse(str.slice(6,-2));
 	} else {
@@ -146,15 +138,15 @@ function get_current_info(company) {
 		j = {'c':'grey','t': prev_company,'l':prev_p,'cp':'grey'};
 	}
 	info = {'price':j['l'],'change':j['c'],'pchange':j['cp']}
-	if (Number(j['c']) > 0){
+	if (Number(j['c']) > 0) {
 		info['icon_name'] = 'share-up'
 		info['style'] = 'color:#00CC00;'
 	}
-	else if (Number(j['c']) === 0){
+	else if (Number(j['c']) === 0) {
 		info['icon_name'] = 'share-neutral'
 		info['style'] = ''
 	}
-	else if (Number(j['c']) < 0){
+	else if (Number(j['c']) < 0) {
 		info['icon_name'] = 'share-down'
 		info['style'] = 'color:#CC0000;'
 	}
@@ -163,27 +155,24 @@ function get_current_info(company) {
 		info['style'] = ''
 		info['price'] = 'Error getting data...'
 	}
-  	//global.log('got info');
 	return info;
 }
 
 function add_new_item_to_file(name,file) {
-	global.log(name + ' ' + file);
-	if (GLib.file_test(file, GLib.FileTest.EXISTS))
-	{
+	if (GLib.file_test(file, GLib.FileTest.EXISTS)) {
 		let content = Shell.get_file_contents_utf8_sync(file);
-		content = content + name + "\n";
-		global.log(content);
-		
+		for each (item in name.split(',')) {
+			content = content + item.toUpperCase() + "\n";
+		}
 		let f = Gio.file_new_for_path(file);
 		let out = f.replace(null, false, Gio.FileCreateFlags.NONE, null);
 		Shell.write_string_to_stream (out, content);
+	} else { 
+		global.logError("share price : Error while reading file : " + file);
 	}
-	else 
-	{ global.logError("share price : Error while reading file : " + file); }
 }
 
-function add_new_item(name) {
+function add_new_item(name,file) {
 	this.button = new St.BoxLayout({ style_class: 'panel-button',
 		reactive: true,
 		can_focus: true,
@@ -197,8 +186,13 @@ function add_new_item(name) {
 	this.pchange = new St.Label({style_class: 'status-label' ,text:' (?) '});
 	remove_icon = new St.Icon({ icon_name: 'edit-delete',
 		icon_type: St.IconType.SYMBOLIC,
-		style_class: 'system-status-icon' });
-	remove_icon.connect('button-press-event',remove_item);
+		style_class: 'system-status-icon',
+		reactive: true,
+		can_focus: true,
+		track_hover: true });
+	remove_icon.connect('button-press-event',function(actor) {
+			remove_item(actor,file);
+		});
 
 	this.button.insert_child_at_index(this.price,2);
 	this.button.insert_child_at_index(this.change,3);
@@ -211,9 +205,25 @@ function add_new_item(name) {
 	return item
 }
 
-function remove_item(actor) {
-	global.log("EVENT");
-	global.log(actor.get_parent());
+function remove_item(actor,file) {
+	let lineindex = actor.get_parent().get_parent().get_children().slice(0,-2).length
+	for (var row = 0; row < actor.get_parent().get_parent().get_children().slice(0,-2).length;row++) {		
+		if(actor.get_parent().get_parent().get_children()[row] === actor.get_parent()) {
+			lineindex = row;
+		}
+	}
+	actor.get_parent().destroy();
+	if (GLib.file_test(file, GLib.FileTest.EXISTS)) {
+		let content = Shell.get_file_contents_utf8_sync(file);
+		lines = content.split('\n');
+		discarded = lines.splice(lineindex,1);
+		let newcontent = lines.join('\n');
+		let f = Gio.file_new_for_path(file);
+		let out = f.replace(null, false, Gio.FileCreateFlags.NONE, null);
+		Shell.write_string_to_stream (out, newcontent);
+	} else { 
+		global.logError("share price : Error while reading file : " + file); 
+	}
 }
 
 function init(metadata) {

@@ -1,0 +1,6 @@
+#!/bin/bash
+target=~/.local/share/gnome-shell/extensions/stock-ticker@akmiller.co.uk/
+
+cp extension.js $target
+cp metadata.json $target
+cp stylesheet.css $target
