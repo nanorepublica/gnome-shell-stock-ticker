@@ -1,6 +1,16 @@
 #!/bin/bash
 target=~/.local/share/gnome-shell/extensions/stock-ticker@akmiller.co.uk/
+icontarget=~/.local/share/icons/
 
-cp extension.js $target
-cp metadata.json $target
-cp stylesheet.css $target
+if [ ! -d "$target" ]; then
+	mkdir -p $target
+else
+	cp extension.js $target
+	cp metadata.json $target
+	cp stylesheet.css $target
+fi
+if [ ! -d "$target" ]; then
+	mkdir -p $icontarget
+else
+	cp *.svg $icontarget
+fi
