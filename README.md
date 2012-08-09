@@ -7,10 +7,6 @@ This is a GNOME Shell extension that enables you to monitor the current share pr
 
 ![Screenshot](https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot.png)
 
-![Screenshot](https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot1.png)
-
-![Screenshot](https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot2.png)
-
 ###To install:
 * Clone this repo
 * Make the build script executable - `chmod +x build`
@@ -19,3 +15,9 @@ This is a GNOME Shell extension that enables you to monitor the current share pr
 The build script just copies the files to the correct place (SVG files go to ~/.local/share/icons and the rest go in ~/.local/share/gnome-shell/extensions/stock-ticker@akmiller.co.uk/)
 
 It is possible to add new companies by entering the stock code in the text box on the menu or multiple companies separated by a comma.
+
+![Screenshot](https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot1.png)
+
+![Screenshot](https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot2.png)
+
+
