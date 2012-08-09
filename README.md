@@ -17,5 +17,5 @@ The build script just copies the files to the correct place (SVG files go to ~/.
 It is possible to add new companies by entering the stock code in the text box on the menu or multiple companies separated by a comma.
 
 
-<img style="top:-20px" src="https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot1.png" />
+<img style="top:-20px; position:relative;" src="https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot1.png" />
 <img src="https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/data/screenshot2.png" />
