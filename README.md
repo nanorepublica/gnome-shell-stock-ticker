@@ -3,9 +3,10 @@ gnome-shell-stock-ticker
 
 This is a GNOME Shell extension that enables you to monitor the current share price of the any publically trading company on Google Finance. 
 
-![Screenshot](screenshot.png)
+![Screenshot](https://github.com/nanorepublica/gnome-shell-stock-ticker/raw/master/screenshot.png)
 
 To install:
+* Clone this repo
 * Make the build script executable (`chmod +x build`)
 * `./build`
 
