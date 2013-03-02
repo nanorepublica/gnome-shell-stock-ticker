@@ -12,5 +12,5 @@ fi
 if [ ! -d "$target" ]; then
 	mkdir -p $icontarget
 else
-	cp *.svg $icontarget
+	cp icons/*.svg $icontarget
 fi
