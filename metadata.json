@@ -1,5 +1,5 @@
 {
-	"shell-version": ["3.4.1"], 
+	"shell-version": ["3.4.1", "3.6.2" ], 
 	"uuid": "stock-ticker@akmiller.co.uk", 
 	"name": "Stock ticker indicator", 
 	"description": "Shows the current share price of chosen companies (based on google finance)",

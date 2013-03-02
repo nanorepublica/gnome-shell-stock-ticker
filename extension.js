@@ -8,37 +8,44 @@ const Clutter = imports.gi.Clutter;
 const Gio = imports.gi.Gio;
 const GLib = imports.gi.GLib;
 
-PopupMenu.PopupImageMenuItem.prototype.setIconType = function(type) {
-	if (type !== undefined) {	
-		this._icon.set_icon_type(type);
-	} else {
-		this._icon.set_icon_type(St.IconType.SYMBOLIC);
-	}
-}
+const START_CONTENTS = "";
+
+//PopupMenu.PopupImageMenuItem.prototype.setIconType = function(type) {
+//	if (type !== undefined) {	
+//		this._icon.set_icon_type(type);
+//	} else {
+//		this._icon.set_icon_type(St.IconType.SYMBOLIC);
+//	}
+//}
 
 
-function stock(metadata) {
+function Stock(metadata) {
 	this.file = metadata.path + '/companies.list';
 	this._init();
 }
 
-stock.prototype = {
-	__proto__: PanelMenu.Button.prototype,
+Stock.prototype = {
+	__proto__: PanelMenu.SystemStatusButton.prototype,
 
 	_init: function() {
-		PanelMenu.Button.prototype._init.call(this, St.Align.START);
-		this.menubutton = new St.Icon({ icon_name: 'share-stock',
-				icon_type: St.IconType.SYMBOLIC,
+		PanelMenu.SystemStatusButton.prototype._init.call(this, St.Align.START);
+		if (!GLib.file_test(this.file, GLib.FileTest.EXISTS)) {
+			createBaseFile(this.file);
+		}
+		this.menubutton = new St.Icon({ icon_name: 'share-stock-symbolic',
+//				icon_type: St.IconType.SYMBOLIC,
 				style_class: 'system-status-icon' });
 
-		this.actor.add_actor(this.menubutton);
+//		this.addIcon(this.menubutton.get)
+		this.setIcon('share-stock-symbolic')
+		//this.actor.add_actor(this.menubutton);
 		this.menu.connect('open-state-changed', Lang.bind(this, this.refresh_list));
 		this._update();	
 	},
 
 	enable: function() {
-			Main.panel._rightBox.insert_child_at_index(this.actor, 0);
-			Main.panel._menus.addMenu(this.menu);
+			let menuManager = Main.panel._menus || Main.panel.menuManager
+			menuManager.addMenu(this.menu);
 			let fileM = Gio.file_new_for_path(this.file);
 			this.monitor = fileM.monitor(Gio.FileMonitorFlags.NONE, null);
 			this.monitor.connect('changed', Lang.bind(this, this._update));
@@ -46,7 +53,8 @@ stock.prototype = {
 
 	disable: function() {
 			Main.panel._rightBox.remove_child(this.actor);
-			Main.panel._menus.removeMenu(this.menu);
+			let menuManager = Main.panel._menus || Main.panel.menuManager
+			menuManager.removeMenu(this.menu);
 			this.monitor.cancel();
 	},
 
@@ -65,7 +73,7 @@ stock.prototype = {
 		let companylist = this.file;
 		panelbutton.set_icon_name("share-stock");
 		CompanyMenu.removeAll()
-		companies = this.read_file();
+		let companies = this.read_file();
 		for each(company in companies) {
 			CompanyMenu.addMenuItem(add_new_item(company,companylist));
 		}
@@ -102,8 +110,8 @@ stock.prototype = {
 	
 	refresh_list: function(actor,event) {
 		for each(menuitem in actor._getMenuItems().slice(0,-2)) {
-			company = menuitem.actor.get_children()[0].get_text();
-			info = get_current_info(company);
+			let company = menuitem.actor.get_children()[0].get_text();
+			let info = get_current_info(company);
 			this.update_text(menuitem,info);
 		}
 	},
@@ -121,23 +129,24 @@ stock.prototype = {
 };
 
 function get_current_info(company) {
-	url = Gio.file_new_for_uri('http://www.google.com/finance/info?q='+company);
+	let url = Gio.file_new_for_uri('http://www.google.com/finance/info?q='+company);
+	let loaded = false;
 	try {
 		loaded = url.load_contents(null)[0]
-	} catch (e if e instanceof BadRequest) {
+	} catch (e if e instanceof URIError) {
 		global.logError("Invalid URI:" + url.get_uri())
 		return "Invalid Name"
 	}
-	j = {}
+	let j = {}
 	if (loaded === true) {
-		str = String(url.load_contents(null)[1])
+		let str = String(url.load_contents(null)[1])
 		j = JSON.parse(str.slice(6,-2));
 	} else {
-		prev_company = company.get_text()
-		prev_p = price.get_text()
+		let prev_company = company.get_text()
+		let prev_p = price.get_text()
 		j = {'c':'grey','t': prev_company,'l':prev_p,'cp':'grey'};
 	}
-	info = {'price':j['l'],'change':j['c'],'pchange':j['cp']}
+	let info = {'price':j['l'],'change':j['c'],'pchange':j['cp']}
 	if (Number(j['c']) > 0) {
 		info['icon_name'] = 'share-up'
 		info['style'] = 'color:#00CC00;'
@@ -158,6 +167,11 @@ function get_current_info(company) {
 	return info;
 }
 
+function createBaseFile(path)
+{
+	GLib.file_set_contents(path,START_CONTENTS)
+}
+
 function add_new_item_to_file(name,file) {
 	if (GLib.file_test(file, GLib.FileTest.EXISTS)) {
 		let content = Shell.get_file_contents_utf8_sync(file);
@@ -167,8 +181,9 @@ function add_new_item_to_file(name,file) {
 		let f = Gio.file_new_for_path(file);
 		let out = f.replace(null, false, Gio.FileCreateFlags.NONE, null);
 		Shell.write_string_to_stream (out, content);
+		out.close(null);
 	} else { 
-		global.logError("share price : Error while reading file : " + file);
+		global.logError("share price add item: Error while reading file : " + file);
 	}
 }
 
@@ -178,14 +193,14 @@ function add_new_item(name,file) {
 		can_focus: true,
 		track_hover: true });
 	this.status_icon = new St.Icon({ icon_name: 'share-neutral',
-		icon_type: St.IconType.FULLCOLOR,
+//		icon_type: St.IconType.FULLCOLOR,
 		style_class: 'system-status-icon' });
 
 	this.price = new St.Label({ style_class: 'status-label', text: '?'});
 	this.change = new St.Label({style_class: 'status-label' ,text:' --'});
 	this.pchange = new St.Label({style_class: 'status-label' ,text:' (?) '});
-	remove_icon = new St.Icon({ icon_name: 'edit-delete',
-		icon_type: St.IconType.SYMBOLIC,
+	let remove_icon = new St.Icon({ icon_name: 'edit-delete',
+//		icon_type: St.IconType.SYMBOLIC,
 		style_class: 'system-status-icon',
 		reactive: true,
 		can_focus: true,
@@ -197,9 +212,9 @@ function add_new_item(name,file) {
 	this.button.insert_child_at_index(this.price,2);
 	this.button.insert_child_at_index(this.change,3);
 	this.button.insert_child_at_index(this.pchange,4);
-
-	item = new PopupMenu.PopupImageMenuItem(name,"share-neutral");
-	item.setIconType(St.IconType.FULLCOLOR);
+	
+	let item = new PopupMenu.PopupImageMenuItem(name,"share-neutral");
+//	item.setIconType(St.IconType.FULLCOLOR);
 	item.addActor(this.button);
 	item.addActor(remove_icon);
 	return item
@@ -215,20 +230,34 @@ function remove_item(actor,file) {
 	actor.get_parent().destroy();
 	if (GLib.file_test(file, GLib.FileTest.EXISTS)) {
 		let content = Shell.get_file_contents_utf8_sync(file);
-		lines = content.split('\n');
-		discarded = lines.splice(lineindex,1);
+		let lines = content.split('\n');
+		let discarded = lines.splice(lineindex,1);
 		let newcontent = lines.join('\n');
 		let f = Gio.file_new_for_path(file);
 		let out = f.replace(null, false, Gio.FileCreateFlags.NONE, null);
 		Shell.write_string_to_stream (out, newcontent);
+		out.close(null);
 	} else { 
-		global.logError("share price : Error while reading file : " + file); 
+		global.logError("share price remove item : Error while reading file : " + file); 
 	}
 }
 
+let meta;  // metadata
+let stock; // instance
+
 function init(metadata) {
-	return new stock(metadata);
+	meta = metadata;
 }
 
+function enable() {
+	stock = new Stock(meta);
+	stock.enable()
+	Main.panel.addToStatusArea('stock', stock);
+}
 
+function disable() {
+	stock.disable();
+	stock.destroy();
+	stock = null;
+}
 
